@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
   <qresource>
+    <file>Icons/SlicerError.png</file>
     <file>Icons/SaveScene.png</file>
     <file>Icons/Small/SlicerLoadDICOM.png</file>
     <file>Icons/Medium/SlicerLoadDICOM.png</file>

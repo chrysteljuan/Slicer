@@ -226,6 +226,10 @@ void qSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
   toolBarActions << this->MouseModeToolBar->toggleViewAction();
   toolBarActions << this->CaptureToolBar->toggleViewAction();
   toolBarActions << this->ViewersToolBar->toggleViewAction();
+#ifdef Slicer_BUILD_EXTENSIONMANAGER_SUPPORT
+  toolBarActions << this->ExtensionsToolBar->toggleViewAction();
+#endif
+  toolBarActions << this->ErrorLogToolBar->toggleViewAction();
 
   this->menuWindowToolBars->insertActions(
     this->actionWindowToolbarsResetToDefault, toolBarActions);
