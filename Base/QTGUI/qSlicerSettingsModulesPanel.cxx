@@ -147,11 +147,11 @@ void qSlicerSettingsModulesPanelPrivate::init()
   q->registerProperty("Modules/ShowHiddenModules", this->ShowHiddenModulesCheckBox,
                       "checked", SIGNAL(toggled(bool)));
   q->registerProperty("Modules/AdditionalPaths", this->AdditionalModulePathsView,
-                      "directoryList", SIGNAL(directoryListChanged()),
+                      "enabledDirectoryList", SIGNAL(directoryListChanged()),
                       "Additional module paths", ctkSettingsPanel::OptionRequireRestart,
                       coreApp->revisionUserSettings());
   q->registerProperty("Modules/DisabledAdditionalPaths", this->AdditionalModulePathsView,
-                      "disabledDirectoryList", SIGNAL(disabledDirectoryListChanged()),
+                      "disabledDirectoryList", SIGNAL(directoryListChanged()),
                       "Disabled Additional module paths", ctkSettingsPanel::OptionRequireRestart,
                       coreApp->revisionUserSettings());
   q->registerProperty("Modules/IgnoreModules", factoryManager,
@@ -236,7 +236,7 @@ void qSlicerSettingsModulesPanel::onAdditionalModulePathsChanged()
 {
   Q_D(qSlicerSettingsModulesPanel);
   d->RemoveAdditionalModulePathButton->setEnabled(
-        d->AdditionalModulePathsView->directoryList().count() > 0);
+        d->AdditionalModulePathsView->enabledDirectoryList().count() > 0);
 }
 
 // --------------------------------------------------------------------------

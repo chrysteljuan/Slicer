@@ -36,14 +36,14 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
 
   QSignalSpy spy(&widget, SIGNAL(directoryListChanged()));
 
-  if (widget.directoryList().count() != 0)
+  if (widget.enabledDirectoryList().count() != 0)
     {
     std::cerr << "Line " << __LINE__ << " - Problem with directoryList() method !" << std::endl;
     return EXIT_FAILURE;
     }
 
   QStringList paths;
-  widget.setDirectoryList(paths);
+  widget.setEnabledDirectoryList(paths);
 
   if (spy.count() != 0)
     {
@@ -52,7 +52,7 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
     }
 
   paths << "." << "/should-not-exist" << ".";
-  widget.setDirectoryList(paths);
+  widget.setEnabledDirectoryList(paths);
 
   if (spy.count() != 1)
     {
@@ -60,13 +60,13 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
     return EXIT_FAILURE;
     }
 
-  if (widget.directoryList().count() != 1)
+  if (widget.enabledDirectoryList().count() != 1)
     {
     std::cerr << "Line " << __LINE__ << " - Problem with directoryList/setDirectoryList methods !" << std::endl;
     return EXIT_FAILURE;
     }
 
-  QString current = widget.directoryList().at(0);
+  QString current = widget.enabledDirectoryList().at(0);
   QString expected = QString(".");
   if (current != expected)
     {
@@ -76,7 +76,7 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
     return EXIT_FAILURE;
     }
 
-  current = widget.directoryList(true).at(0);
+  current = widget.enabledDirectoryList(true).at(0);
   expected = QDir::current().absolutePath();
   if (current != expected)
     {
@@ -94,7 +94,7 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
     return EXIT_FAILURE;
     }
 
-  if (widget.directoryList().count() != 0)
+  if (widget.enabledDirectoryList().count() != 0)
     {
     std::cerr << "Line " << __LINE__ << " - Problem with removeDirectory() method !" << std::endl;
     return EXIT_FAILURE;
@@ -102,7 +102,7 @@ int qSlicerDirectoryListViewTest1(int argc, char * argv[] )
 
   paths.clear();
   paths << ".";
-  widget.setDirectoryList(paths);
+  widget.setEnabledDirectoryList(paths);
 
   if (spy.count() != 3)
     {

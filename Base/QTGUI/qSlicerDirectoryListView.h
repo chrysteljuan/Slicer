@@ -33,7 +33,7 @@ class qSlicerDirectoryListViewPrivate;
 class Q_SLICER_BASE_QTGUI_EXPORT qSlicerDirectoryListView : public QWidget
 {
   Q_OBJECT
-  Q_PROPERTY(QStringList directoryList READ directoryList WRITE setDirectoryList NOTIFY directoryListChanged);
+  Q_PROPERTY(QStringList enabledDirectoryList READ enabledDirectoryList WRITE setEnabledDirectoryList NOTIFY enabledDirectoryListChanged);
   Q_PROPERTY(QStringList disabledDirectoryList READ disabledDirectoryList WRITE setDisabledDirectoryList NOTIFY disabledDirectoryListChanged);
 public:
   /// Superclass typedef
@@ -48,29 +48,27 @@ public:
   /// Return True if the \a path has already been added
   bool hasDirectory(const QString& path)const;
 
-  QStringList directoryList(bool absolutePath = false)const;
+  bool isDirectoryEnabled(const QString& path)const;
 
+  void setDirectoryEnabled(const QString& path, bool enabled);
+
+  QStringList enabledDirectoryList(bool absolutePath = false)const;
   QStringList disabledDirectoryList(bool absolutePath = false)const;
 
   QStringList selectedDirectoryList(bool absolutePath = false)const;
-
   QStringList selectedDisabledDirectoryList(bool absolutePath = false)const;
-
-  bool setDirectoryListEnabled(const QStringList& list, bool enable);
 
 public slots:
 
   /// If \a path exists, add it to the view and emit signal directoryListChanged().
   /// \sa directoryListChanged()
-  void addDirectory(const QString& path);
-
-  //void addDisabledDirectory(const QString& path);
+  void addDirectory(const QString& path, bool enabled = true);
 
   /// Remove all entries and set \a paths has current list.
   /// The signal directoryListChanged() is emitted if the current list of directories is
   /// different from the provided one.
   /// \sa addDirectory(), directoryListChanged()
-  void setDirectoryList(const QStringList& paths);
+  void setEnabledDirectoryList(const QStringList& paths);
 
   void setDisabledDirectoryList(const QStringList& paths);
 
@@ -92,18 +90,12 @@ public slots:
   /// Clear the current directory selection.
   void clearDirectorySelection();
 
-  ///enable the directory selected.
+  /// Enable the selected directories.
   void enableSelectedDirectories();
-
-  //void setDirectoriesEnabled(const QStringList& list, bool enable);
 
 signals:
   /// This signal is emitted when a directory is added to the view.
   void directoryListChanged();
-
-  void disabledDirectoryListChanged();
-
-  void toggled(bool state);
 
 protected:
   QScopedPointer<qSlicerDirectoryListViewPrivate> d_ptr;
