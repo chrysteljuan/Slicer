@@ -48,6 +48,7 @@ public:
   virtual ~qSlicerSettingsModulesPanel();
 
 public slots:
+  //void toggle();
 
 protected slots:
   void onHomeModuleChanged(const QString& moduleName);
@@ -55,9 +56,11 @@ protected slots:
   void onShowHiddenModulesChanged(bool);
 
   void onAdditionalModulePathsChanged();
+  void onDisabledAdditionalModulePathsChanged();
   void onAddModulesAdditionalPathClicked();
   void onRemoveModulesAdditionalPathClicked();
   void onModulesToIgnoreChanged();
+  void onEnableModulesAdditionalClicked();
 
 protected:
   QScopedPointer<qSlicerSettingsModulesPanelPrivate> d_ptr;

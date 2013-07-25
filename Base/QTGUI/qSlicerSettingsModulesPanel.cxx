@@ -24,6 +24,9 @@
 
 // QtGUI includes
 #include "qSlicerApplication.h"
+//moi
+#include "qSlicerDirectoryListView.h"
+//////
 #include "qSlicerModuleFactoryFilterModel.h"
 #include "qSlicerModuleFactoryManager.h"
 #include "qSlicerModuleManager.h"
@@ -147,6 +150,10 @@ void qSlicerSettingsModulesPanelPrivate::init()
                       "directoryList", SIGNAL(directoryListChanged()),
                       "Additional module paths", ctkSettingsPanel::OptionRequireRestart,
                       coreApp->revisionUserSettings());
+  q->registerProperty("Modules/DisabledAdditionalPaths", this->AdditionalModulePathsView,
+                      "disabledDirectoryList", SIGNAL(disabledDirectoryListChanged()),
+                      "Disabled Additional module paths", ctkSettingsPanel::OptionRequireRestart,
+                      coreApp->revisionUserSettings());
   q->registerProperty("Modules/IgnoreModules", factoryManager,
                       "modulesToIgnore", SIGNAL(modulesToIgnoreChanged(QStringList)),
                       "Modules to ignore", ctkSettingsPanel::OptionRequireRestart,
@@ -157,12 +164,20 @@ void qSlicerSettingsModulesPanelPrivate::init()
                    q, SLOT(onTemporaryPathChanged(QString)));
   QObject::connect(this->AdditionalModulePathsView, SIGNAL(directoryListChanged()),
                    q, SLOT(onAdditionalModulePathsChanged()));
+  QObject::connect(this->AdditionalModulePathsView, SIGNAL(disabledDirectoryListChanged()),
+                   q, SLOT(onDisabledAdditionalModulePathsChanged()));
 
   // Connect AdditionalModulePaths buttons
   QObject::connect(this->AddAdditionalModulePathButton, SIGNAL(clicked()),
                    q, SLOT(onAddModulesAdditionalPathClicked()));
   QObject::connect(this->RemoveAdditionalModulePathButton, SIGNAL(clicked()),
                    q, SLOT(onRemoveModulesAdditionalPathClicked()));
+  QObject::connect(this->EnablePushButton, SIGNAL(clicked()),
+                   q, SLOT(onEnableModulesAdditionalClicked()));
+ // QObject::connect(this->EnablePushButton, SIGNAL(toggled(bool)),
+           //        q, SLOT(onEnableModulesAdditionalClicked(bool)));
+  //QObject::connect(this->, SIGNAL(clicked()),
+    //               q, SLOT(onEnableModulesAdditionalClicked(bool)));
 
   // Connect Modules to ignore
   QObject::connect(factoryManager, SIGNAL(modulesToIgnoreChanged(QStringList)),
@@ -225,6 +240,14 @@ void qSlicerSettingsModulesPanel::onAdditionalModulePathsChanged()
 }
 
 // --------------------------------------------------------------------------
+void qSlicerSettingsModulesPanel::onDisabledAdditionalModulePathsChanged()
+{
+  Q_D(qSlicerSettingsModulesPanel);
+  d->RemoveAdditionalModulePathButton->setEnabled(
+        d->AdditionalModulePathsView->disabledDirectoryList().count() > 0);
+}
+
+// --------------------------------------------------------------------------
 void qSlicerSettingsModulesPanel::onModulesToIgnoreChanged()
 {
 }
@@ -253,3 +276,26 @@ void qSlicerSettingsModulesPanel::onRemoveModulesAdditionalPathClicked()
   d->AdditionalModulePathsView->removeSelectedDirectories();
 }
 
+// --------------------------------------------------------------------------
+void qSlicerSettingsModulesPanel::onEnableModulesAdditionalClicked()//moi //bool enable
+{
+  Q_D(qSlicerSettingsModulesPanel);
+  d->AdditionalModulePathsView->enableSelectedDirectories();
+  /*//d->AdditionalModulePathsView->directoryList().contains()
+  foreach (QString path, d->AdditionalModulePathsView->selectedDirectoryList())
+    {
+    d->AdditionalModulePathsView->directoryList().contains(d->AdditionalModulePathsView->selectedDirectoryList().at(path));
+    if (true == d->AdditionalModulePathsView->directoryList().contains(d->AdditionalModulePathsView->selectedDirectoryList().at(path)) )
+    {
+   // enable = true;
+    d->AdditionalModulePathsView->enableSelectedDirectories(enable);
+    d->EnablePushButton->setText("Disable");
+    //emit toggled(true);
+    }
+  else
+    {
+    enable = false;
+    d->AdditionalModulePathsView->enableSelectedDirectories(enable);
+    d->EnablePushButton->setText("Enable");
+    }*/
+}
