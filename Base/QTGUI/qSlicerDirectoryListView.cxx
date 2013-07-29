@@ -92,34 +92,34 @@ void qSlicerDirectoryListViewPrivate::addDirectory(const QString& path)
     {
     return;
     }
- // this->DirectoryListModel.removeRows(0, (this->DirectoryListModel.rowCount()));//rajouter
- // this->DirectoryListModel.removeRow(selectedIndexes.at(0).row());
-  qDebug() << "directorylist [" << q->enabledDirectoryList() << "]";
-  qDebug() << "q->disabledDirectoryList() [" << q->disabledDirectoryList() << "]";
-  qDebug() << "wherepath [" << qPrintable(path) << "]";
-    //this->DirectoryListModel.removeRows(0, (this->DirectoryListModel.rowCount()));//rajouter
-    item->setData(QVariant(Qt::darkBlue), Qt::ForegroundRole);
-    item->setData(QVariant(absolutePath), Qt::ToolTipRole);//juste ces 3
-    item->setData(QVariant(absolutePath), qSlicerDirectoryListViewPrivate::AbsolutePathRole);//juste ces 3
-    this->DirectoryListModel.appendRow(item);//juste ces 3
-    qDebug() << "directorylist [" << q->enabledDirectoryList() << "]";
-    qDebug() << "disabledDirectoryList() [" << q->disabledDirectoryList() << "]";
-
+    item->setData(QVariant(absolutePath), Qt::ToolTipRole);
+    item->setData(QVariant(absolutePath), qSlicerDirectoryListViewPrivate::AbsolutePathRole);
+    this->DirectoryListModel.appendRow(item);
+    qDebug() << "directorylist [" << q->directoryList() << "]";
 }
 
 // --------------------------------------------------------------------------
 bool qSlicerDirectoryListViewPrivate::setDirectoryEnabled(const QString& path, bool enabled)
 {
-  //
+  Q_Q(qSlicerDirectoryListView);
   QString absolutePath = QFileInfo(path).absoluteFilePath();
   QModelIndexList foundIndexes = this->DirectoryListModel.match(
-          d->DirectoryListModel.index(0, 0), qSlicerDirectoryListViewPrivate::AbsolutePathRole,
+          this->DirectoryListModel.index(0, 0), qSlicerDirectoryListViewPrivate::AbsolutePathRole,
           QVariant(absolutePath));
   Q_ASSERT(foundIndexes.size() < 2);
   if(!foundIndexes.empty())
     {
     QModelIndex index = foundIndexes.first();
-    // TODO: Set the state using 'enabled'
+    if (enabled)
+      {
+      QList<QStandardItem*> foundItems = this->DirectoryListModel.findItems(path);
+      foundItems.at(0)->setData(QVariant(Qt::darkMagenta), Qt::ForegroundRole);
+      }
+    else
+      {
+      QList<QStandardItem*> foundItems = this->DirectoryListModel.findItems(path);
+      foundItems.at(0)->setData(QVariant(Qt::darkGray), Qt::ForegroundRole);
+      }
     return true;
     }
   return false;
@@ -143,19 +143,22 @@ qSlicerDirectoryListView::~qSlicerDirectoryListView()
 }
 
 // --------------------------------------------------------------------------
-QStringList qSlicerDirectoryListView::enabledDirectoryList(bool absolutePath)const
+QStringList qSlicerDirectoryListView::directoryList(bool absolutePath)const
 {
   Q_D(const qSlicerDirectoryListView);
   QStringList directoryList;
   int role = Qt::DisplayRole;
+  bool enabled;
   if (absolutePath)
     {
     role = qSlicerDirectoryListViewPrivate::AbsolutePathRole;
     }
   for(int i = 0; i < d->DirectoryListModel.rowCount(); ++i)
     {
-    QString path = d->DirectoryListModel.data(d->DirectoryListModel.index(i, 0), role).toString();
-    if(d->isDirectoryEnabled(path, absolutePath))
+    QString& path = d->DirectoryListModel.data(d->DirectoryListModel.index(i, 0), role).toString();
+    enabled = this->isDirectoryEnabled(path);
+    qDebug() << "this->isDirectoryEnabled(path);" << this->isDirectoryEnabled(path);
+    if(enabled)
       {
       directoryList << path;
       }
@@ -164,7 +167,7 @@ QStringList qSlicerDirectoryListView::enabledDirectoryList(bool absolutePath)con
 }
 
 // --------------------------------------------------------------------------
-QStringList qSlicerDirectoryListView::disabledDirectoryList(bool absolutePath)const
+/*QStringList qSlicerDirectoryListView::disabledDirectoryList(bool absolutePath)const
 {
   Q_D(const qSlicerDirectoryListView);
   QStringList directoryList;
@@ -176,13 +179,13 @@ QStringList qSlicerDirectoryListView::disabledDirectoryList(bool absolutePath)co
   for(int i = 0; i < d->DirectoryListModel.rowCount(); ++i)
     {
     QString path = d->DirectoryListModel.data(d->DirectoryListModel.index(i, 0), role).toString();
-    if(!d->isDirectoryEnabled(path, absolutePath))
+    if(!this->isDirectoryEnabled(path))
       {
       directoryList << path;
       }
     }
   return directoryList;
-}
+}*/
 
 // --------------------------------------------------------------------------
 QStringList qSlicerDirectoryListView::selectedDirectoryList(bool absolutePath)const
@@ -217,20 +220,33 @@ bool qSlicerDirectoryListView::hasDirectory(const QString& path)const
 // --------------------------------------------------------------------------
 bool qSlicerDirectoryListView::isDirectoryEnabled(const QString& path)const
 {
+  Q_D(const qSlicerDirectoryListView);
   if(!this->hasDirectory(path))
     {
     return false;
     }
-  // Todo: Check if enabled or disabled
-  return true;
+  QStandardItem item;
+  item.setForeground(Qt::darkMagenta);
+  QList<QStandardItem*> foundItems = d->DirectoryListModel.findItems(path);
+  //qDebug() << "foundItems.at(0)->foreground().color()" << foundItems.at(0)->foreground().color();
+  //qDebug() << "item.foreground().color()" << item.foreground().color();
+  if( foundItems.at(0)->foreground().color() == item.foreground().color())
+    {
+    return true;
+    }
+  else
+    {
+    return false;
+    }
 }
 
 // --------------------------------------------------------------------------
 void qSlicerDirectoryListView::setDirectoryEnabled(const QString& path, bool enabled)
 {
   Q_D(qSlicerDirectoryListView);
-  if(!d->setDirectoryEnabled(path, enabled))
+  if(!d->setDirectoryEnabled(path, enabled))//isn't it when it's true ?//false by jc
     {
+    emit dataChanged();
     emit this->directoryListChanged();
     }
 }
@@ -244,8 +260,8 @@ void qSlicerDirectoryListView::addDirectory(const QString& path, bool enabled)
   if(!this->hasDirectory(path))
     {
     d->addDirectory(path);
-    d->setDirectoryEnabled(path, enabled);
-    emit this->directoryListChanged();
+    this->setDirectoryEnabled(path, enabled);
+    //emit this->directoryListChanged();
     }
   else
     {
@@ -262,7 +278,7 @@ void qSlicerDirectoryListView::removeDirectory(const QString& path)
   if (foundItems.count() == 1)
     {
     d->DirectoryListModel.removeRow(foundItems.at(0)->row());
-    emit this->enabledDirectoryListChanged();
+    emit this->directoryListChanged();
     }
 }
 
@@ -280,7 +296,7 @@ void qSlicerDirectoryListView::removeSelectedDirectories()
     }
   if (selectedCount)
     {
-    emit this->enabledDirectoryListChanged();
+    emit this->directoryListChanged();
     }
 }
 
@@ -299,37 +315,7 @@ void qSlicerDirectoryListView::clearDirectorySelection()
 }
 
 // --------------------------------------------------------------------------
-void qSlicerDirectoryListView::setDirectoryList(const QStringList& paths, bool enabled)
-{
-  Q_D(qSlicerDirectoryListView);
-
-  if (paths.count() == this->enabledDirectoryList().count())
-    {
-    int found = 0;
-    foreach(const QString& path, paths)
-      {
-      if (this->hasDirectory(path))
-        {
-        ++found;
-        }
-      }
-    if (found == paths.count())
-      {
-      return;
-      }
-    }
-
-  d->DirectoryListModel.removeRows(0, d->DirectoryListModel.rowCount());
-
-  foreach(const QString& path, paths)
-    {
-    d->addDirectory(path);
-    }
-  emit this->directoryListChanged();
-}
-
-// --------------------------------------------------------------------------
-void qSlicerDirectoryListView::setDisabledDirectoryList(const QStringList& paths)// todo
+void qSlicerDirectoryListView::setDirectoryList(const QStringList& paths)
 {
   Q_D(qSlicerDirectoryListView);
 
@@ -359,80 +345,57 @@ void qSlicerDirectoryListView::setDisabledDirectoryList(const QStringList& paths
 }
 
 // --------------------------------------------------------------------------
+/*void qSlicerDirectoryListView::setDisabledDirectoryList(const QStringList& paths)// todo
+{
+  Q_D(qSlicerDirectoryListView);
+
+  if (paths.count() == this->directoryList().count())
+    {
+    int found = 0;
+    foreach(const QString& path, paths)
+      {
+      if (this->hasDirectory(path))
+        {
+        ++found;
+        }
+      }
+    if (found == paths.count())
+      {
+      return;
+      }
+    }
+
+  d->DirectoryListModel.removeRows(0, d->DirectoryListModel.rowCount());
+
+  foreach(const QString& path, paths)
+    {
+    d->addDirectory(path);
+    }
+  emit this->directoryListChanged();
+}*/
+
+// --------------------------------------------------------------------------
 void qSlicerDirectoryListView::enableSelectedDirectories()
 {
   Q_D(qSlicerDirectoryListView);
   QModelIndexList selectedIndexes = d->ListView->selectionModel()->selectedRows(0);
+  QVariantMap map;
+  bool enabled;
   if(selectedIndexes.empty())
     {
     return;
     }
-
-  //d->DirectoryListModel.removeRows(0, this->directoryList().count());
-
-  foreach(const QString& path, selectedDirectories)
+  foreach(const QString& path, this->selectedDirectoryList())
     {
-//    QStandardItem* item = new QStandardItem(path);
-    //QModelIndexList selectedIndexes = d->ListView->selectionModel()->selectedRows(0);
-    qDebug() << "q->directoryList().isEmpty()" << this->enabledDirectoryList().isEmpty();
-    qDebug() << "q->disabledDirectoryList().isEmpty()" << this->disabledDirectoryList().isEmpty();
-    qDebug() << "q->directoryList().contains(path, Qt::CaseInsensitive)" << this->enabledDirectoryList().contains(path, Qt::CaseInsensitive);
-    qDebug() << "q->disabledDirectoryList().contains(path, Qt::CaseInsensitive)" << this->disabledDirectoryList().contains(path, Qt::CaseInsensitive);
-
-   if (this->enabledDirectoryList().contains(path))
-     {
-     this->addDirectory(path);
-     /*item->setData(QVariant(Qt::red), Qt::ForegroundRole);
-     d->DirectoryListModel.appendRow(item);
-     this->directoryList().removeOne(path);
-     qDebug() << "this->directoryList().removeOne(path) [" << this->directoryList().removeOne(path) << "]";
-     this->directoryList().removeDuplicates();
-     qDebug() << "this->directoryList().removeDuplicates() [" << this->directoryList().removeDuplicates() << "]";
-     //this->disabledDirectoryList().append(path);
-
-     qDebug() << "this->disabledDirectoryList().append(path) [" << this->disabledDirectoryList() << "]";
-     this->disabledDirectoryList().removeDuplicates();
-     qDebug() << "this->disabledDirectoryList().removeDuplicates() [" << this->disabledDirectoryList().removeDuplicates() << "]";*/
-     emit this->enabledDirectoryListChanged();
-     emit this->disabledDirectoryListChanged();
-     qDebug() << "directorylist [" << this->enabledDirectoryList() << "]";
-  qDebug() << "q->disabledDirectoryList() [" << this->disabledDirectoryList() << "]";
-
-     return;
+    enabled= this->isDirectoryEnabled(path);
+    map.insert(path, enabled);
+    this->setDirectoryEnabled(path,!enabled);
+    qDebug() << "this->isDirectoryEnabled(path) dans enableselecteddirectorylist" << this->isDirectoryEnabled(path);
     }
-  if (this->disabledDirectoryList().contains(path, Qt::CaseInsensitive) )
-    {
-    //d->addDirectory(path); //private
-//    item->setData(QVariant(Qt::darkYellow), Qt::ForegroundRole);
-//    d->DirectoryListModel.appendRow(item);
-    this->disabledDirectoryList().removeOne(path);
-    this->disabledDirectoryList().removeDuplicates();
-    this->enabledDirectoryList().append(path);
-    emit this->disabledDirectoryListChanged();
-    this->enabledDirectoryList().removeDuplicates();
-    emit this->enabledDirectoryListChanged();
-    return;
-    }
-  /*else
-      {
-      this->setDirectoryList(this->selectedDisabledDirectoryList());
-    //this->selectedDisabledDirectoryList();
-      emit this->disabledDirectoryListChanged();
-     // emit this->directoryListChanged();
-      } */
-   // this->setDisabledDirectoryList(this->selectedDirectoryList());
-      //emit this->disabledDirectoryListChanged();
-      //this->addDirectory(this->selectedDirectoryList()[i]);
-      qDebug() << "this->DirectoryList():" << this->enabledDirectoryList();
-    //  this->selectedDirectoryList();
-     // emit this->disabledDirectoryListChanged();
-      //emit this->directoryListChanged();
-
-        }
 }
 
 // --------------------------------------------------------------------------
-void qSlicerDirectoryListView::removeDisabledSelectedDirectories()
+/*void qSlicerDirectoryListView::removeDisabledSelectedDirectories()
 {
   Q_D(qSlicerDirectoryListView);
 
@@ -445,12 +408,12 @@ void qSlicerDirectoryListView::removeDisabledSelectedDirectories()
     }
   if (selectedCount)
     {
-    emit this->disabledDirectoryListChanged();
+    //emit this->disabledDirectoryListChanged();
     }
-}
+}*/
 
 // --------------------------------------------------------------------------
-QStringList qSlicerDirectoryListView::selectedDisabledDirectoryList(bool absolutePath)const
+/*QStringList qSlicerDirectoryListView::selectedDisabledDirectoryList(bool absolutePath)const
 {
   Q_D(const qSlicerDirectoryListView);
   QStringList disabledDirectoryList;
@@ -465,10 +428,10 @@ QStringList qSlicerDirectoryListView::selectedDisabledDirectoryList(bool absolut
     disabledDirectoryList << d->DirectoryListModel.data(index, role).toString();
     }
   return disabledDirectoryList;
-}
+}*/
 
 // --------------------------------------------------------------------------
-void qSlicerDirectoryListView::removeDisabledDirectory(const QString& path)
+/*void qSlicerDirectoryListView::removeDisabledDirectory(const QString& path)
 {
   Q_D(qSlicerDirectoryListView);
   QList<QStandardItem*> foundItems = d->DirectoryListModel.findItems(path);
@@ -476,6 +439,6 @@ void qSlicerDirectoryListView::removeDisabledDirectory(const QString& path)
   if (foundItems.count() == 1)
     {
     d->DirectoryListModel.removeRow(foundItems.at(0)->row());
-    emit this->disabledDirectoryListChanged();
+    //emit this->disabledDirectoryListChanged();
     }
-}
+}*/

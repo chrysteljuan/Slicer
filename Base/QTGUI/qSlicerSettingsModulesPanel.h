@@ -56,7 +56,6 @@ protected slots:
   void onShowHiddenModulesChanged(bool);
 
   void onAdditionalModulePathsChanged();
-  void onDisabledAdditionalModulePathsChanged();
   void onAddModulesAdditionalPathClicked();
   void onRemoveModulesAdditionalPathClicked();
   void onModulesToIgnoreChanged();
