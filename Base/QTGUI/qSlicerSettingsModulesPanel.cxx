@@ -147,10 +147,6 @@ void qSlicerSettingsModulesPanelPrivate::init()
                       "directoryList", SIGNAL(directoryListChanged()),
                       "Additional module paths", ctkSettingsPanel::OptionRequireRestart,
                       coreApp->revisionUserSettings());
-  /*q->registerProperty("Modules/DisabledAdditionalPaths", this->AdditionalModulePathsView,
-                      "disabledDirectoryList", SIGNAL(directoryListChanged()),
-                      "Disabled Additional module paths", ctkSettingsPanel::OptionRequireRestart,
-                      coreApp->revisionUserSettings());*/
   q->registerProperty("Modules/IgnoreModules", factoryManager,
                       "modulesToIgnore", SIGNAL(modulesToIgnoreChanged(QStringList)),
                       "Modules to ignore", ctkSettingsPanel::OptionRequireRestart,
@@ -161,8 +157,6 @@ void qSlicerSettingsModulesPanelPrivate::init()
                    q, SLOT(onTemporaryPathChanged(QString)));
   QObject::connect(this->AdditionalModulePathsView, SIGNAL(directoryListChanged()),
                    q, SLOT(onAdditionalModulePathsChanged()));
-  QObject::connect(this->AdditionalModulePathsView, SIGNAL(disabledDirectoryListChanged()),
-                   q, SLOT(onDisabledAdditionalModulePathsChanged()));
 
   // Connect AdditionalModulePaths buttons
   QObject::connect(this->AddAdditionalModulePathButton, SIGNAL(clicked()),
