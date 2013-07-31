@@ -95,7 +95,7 @@ void qSlicerDirectoryListViewPrivate::addDirectory(const QString& path)
     item->setData(QVariant(absolutePath), Qt::ToolTipRole);
     item->setData(QVariant(absolutePath), qSlicerDirectoryListViewPrivate::AbsolutePathRole);
     this->DirectoryListModel.appendRow(item);
-    qDebug() << "directorylist [" << q->directoryList() << "]";
+    //qDebug() << "directorylist [" << q->directoryList() << "]";
 }
 
 // --------------------------------------------------------------------------
@@ -147,7 +147,6 @@ QStringList qSlicerDirectoryListView::directoryList(bool absolutePath)const
   Q_D(const qSlicerDirectoryListView);
   QStringList directoryList;
   int role = Qt::DisplayRole;
-  bool enabled;
   if (absolutePath)
     {
     role = qSlicerDirectoryListViewPrivate::AbsolutePathRole;
@@ -163,7 +162,7 @@ QStringList qSlicerDirectoryListView::directoryList(bool absolutePath)const
 QVariantMap qSlicerDirectoryListView::directoryMap()const
 {
   QVariantMap directoryMap;
-  foreach(const QString& path, this->directoryList(/* absolutePath = */ true))
+  foreach(const QString& path, this->directoryList(/* absolutePath = true*/ ))
     {
     directoryMap.insert(path, this->isDirectoryEnabled(path));
     }
@@ -225,9 +224,9 @@ bool qSlicerDirectoryListView::isDirectoryEnabled(const QString& path)const
 void qSlicerDirectoryListView::setDirectoryEnabled(const QString& path, bool enabled)
 {
   Q_D(qSlicerDirectoryListView);
-  if(d->setDirectoryEnabled(path, enabled))//isn't it when it's true ?//false by jc
+  if(d->setDirectoryEnabled(path, enabled))
     {
-    emit dataChanged();
+    emit this->dataChanged();
     emit this->directoryListChanged();
     }
 }
@@ -235,14 +234,12 @@ void qSlicerDirectoryListView::setDirectoryEnabled(const QString& path, bool ena
 // --------------------------------------------------------------------------
 void qSlicerDirectoryListView::addDirectory(const QString& path, bool enabled)
 {
-  // qDebug() << "addDirectory" << path;
   Q_D(qSlicerDirectoryListView);
 
   if(!this->hasDirectory(path))
     {
     d->addDirectory(path);
     this->setDirectoryEnabled(path, enabled);
-    emit this->directoryListChanged();
     }
   else
     {
@@ -299,7 +296,6 @@ void qSlicerDirectoryListView::clearDirectorySelection()
 void qSlicerDirectoryListView::setDirectoryList(const QStringList& paths)
 {
   Q_D(qSlicerDirectoryListView);
-
   if (paths.count() == this->directoryList().count())
     {
     int found = 0;
@@ -307,7 +303,6 @@ void qSlicerDirectoryListView::setDirectoryList(const QStringList& paths)
       {
       if (this->hasDirectory(path))
         {
-        //d->setDirectoryEnabled(path, this->isDirectoryEnabled(path));
         ++found;
         }
       }
@@ -330,11 +325,33 @@ void qSlicerDirectoryListView::setDirectoryList(const QStringList& paths)
 void qSlicerDirectoryListView::setDirectoryMap(const QVariantMap& map)
 {
   Q_D(qSlicerDirectoryListView);
+  if (map.count() == this->directoryMap().count())
+    {
+    int found = 0;
+    foreach(const QString& path, map.keys())
+      {
+      if (this->hasDirectory(path)
+          && this->isDirectoryEnabled(path) == map.value(path).toBool())
+        {
+        d->setDirectoryEnabled(path, this->isDirectoryEnabled(path));
+        emit this->dataChanged();
+        ++found;
+        }
+      }
+    if (found == map.count())
+      {
+      return;
+      }
+    }
+
   d->DirectoryListModel.removeRows(0, d->DirectoryListModel.rowCount());
 
   foreach(const QString& path, map.keys())
     {
-    this->addDirectory(path, this->isDirectoryEnabled(path));
+    if(!this->hasDirectory(path))
+      {
+      this->addDirectory(path,map.value(path).toBool());
+      }
     }
   emit this->directoryListChanged();
 }

@@ -144,7 +144,7 @@ void qSlicerSettingsModulesPanelPrivate::init()
   q->registerProperty("Modules/ShowHiddenModules", this->ShowHiddenModulesCheckBox,
                       "checked", SIGNAL(toggled(bool)));
   q->registerProperty("Modules/AdditionalPaths", this->AdditionalModulePathsView,
-                      "directoryList", SIGNAL(directoryListChanged()),
+                      "directoryMap", SIGNAL(directoryListChanged()),
                       "Additional module paths", ctkSettingsPanel::OptionRequireRestart,
                       coreApp->revisionUserSettings());
   q->registerProperty("Modules/IgnoreModules", factoryManager,
@@ -256,20 +256,8 @@ void qSlicerSettingsModulesPanel::onRemoveModulesAdditionalPathClicked()
 }
 
 // --------------------------------------------------------------------------
-void qSlicerSettingsModulesPanel::onEnableModulesAdditionalClicked()//moi //bool enable
+void qSlicerSettingsModulesPanel::onEnableModulesAdditionalClicked()
 {
   Q_D(qSlicerSettingsModulesPanel);
   d->AdditionalModulePathsView->enableSelectedDirectories();
-  /*QStringList paths = d->AdditionalModulePathsView->selectedDirectoryList();
-  foreach(const QString& path, paths)
-    {
-    if(d->AdditionalModulePathsView->isDirectoryEnabled(path))
-      {
-      d->EnablePushButton->setText("Disable");
-      }
-    else
-      {
-      d->EnablePushButton->setText("Enable");
-      }
-    }*/
 }
