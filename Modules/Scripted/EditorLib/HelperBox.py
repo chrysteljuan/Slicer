@@ -773,13 +773,14 @@ class HelperBox(object):
 
     if not self.colorSelect:
       self.colorSelect = qt.QDialog(slicer.util.mainWindow())
+      self.colorSelect.name = 'EditorColorSelectDialog'
       self.colorSelect.setLayout( qt.QVBoxLayout() )
 
       self.colorPromptLabel = qt.QLabel()
       self.colorSelect.layout().addWidget( self.colorPromptLabel )
 
-
       self.colorSelectorFrame = qt.QFrame()
+      self.colorSelectorFrame.name = 'ColorSelectorFrame'
       self.colorSelectorFrame.setLayout( qt.QHBoxLayout() )
       self.colorSelect.layout().addWidget( self.colorSelectorFrame )
 
@@ -808,14 +809,17 @@ class HelperBox(object):
         self.colorSelector.setCurrentNode( defaultNode )
 
       self.colorButtonFrame = qt.QFrame()
+      self.colorButtonFrame.name = 'ColorButtonFrame'
       self.colorButtonFrame.setLayout( qt.QHBoxLayout() )
       self.colorSelect.layout().addWidget( self.colorButtonFrame )
 
       self.colorDialogApply = qt.QPushButton("Apply", self.colorButtonFrame)
+      self.colorDialogApply.name = 'ColorDialogApply'
       self.colorDialogApply.setToolTip( "Use currently selected color node." )
       self.colorButtonFrame.layout().addWidget(self.colorDialogApply)
 
       self.colorDialogCancel = qt.QPushButton("Cancel", self.colorButtonFrame)
+      self.colorDialogCancel.name = 'ColorDialogCancel'
       self.colorDialogCancel.setToolTip( "Cancel current operation." )
       self.colorButtonFrame.layout().addWidget(self.colorDialogCancel)
 
