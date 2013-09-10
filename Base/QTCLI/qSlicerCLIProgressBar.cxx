@@ -24,6 +24,7 @@
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QLabel>
+#include <QTime>
 #include <QProgressBar>
 
 // Slicer includes
@@ -98,12 +99,8 @@ void qSlicerCLIProgressBarPrivate::init()
   this->StatusLabelLabel->setSizePolicy(sizePolicy);
   this->StatusLabelLabel->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
 
-  this->GridLayout->addWidget(StatusLabelLabel, 1, 0, 1, 1);
-
   this->StatusLabel = new QLabel();
   this->StatusLabel->setObjectName(QString::fromUtf8("StatusLabel"));
-
-  this->GridLayout->addWidget(StatusLabel, 1, 1, 1, 1);
 
   this->ProgressBar = new QProgressBar();
   this->ProgressBar->setObjectName(QString::fromUtf8("ProgressBar"));
@@ -120,6 +117,8 @@ void qSlicerCLIProgressBarPrivate::init()
   this->StatusLabelLabel->setText(QObject::tr("Status:"));
   this->StatusLabel->setText(QObject::tr("Idle"));
 
+  this->GridLayout->addWidget(StatusLabelLabel, 1, 0, 1, 1);
+  this->GridLayout->addWidget(StatusLabel, 1, 1, 1, 1);
   q->updateUiFromCommandLineModuleNode(this->CommandLineModuleNode);
 }
 
@@ -256,10 +255,21 @@ void qSlicerCLIProgressBar::updateUiFromCommandLineModuleNode(
     }
 
   // Update progress
-  d->StatusLabel->setText(node->GetStatusString());
-
-  // Update Progress
   ModuleProcessInformation* info = node->GetModuleDescription().GetProcessInformation();
+  d->StatusLabel->setText(node->GetStatusString());
+  QTime time;
+  //QString z, s, m;
+  //time = (time.addMSecs(info->ElapsedTime *1000)); //if you want to add Msec
+  time = (time.addSecs(info->ElapsedTime));
+  //int msec = time.msec();
+  //int second = time.second();
+  //int minute = time.minute();
+  //z.setNum(msec);
+  //s.setNum(second);
+  //m.setNum(minute);
+  //qDebug()<<"time elapsed with m:sec:msec"<< QString("%1 in %2 m %3 s %4 ms").arg(node->GetStatusString()).arg(m).arg(s).arg(z); //display m:s:ms
+  qDebug()<<"time elapsed hour:m:second"<< time.toString();
+
   switch (node->GetStatus())
     {
     case vtkMRMLCommandLineModuleNode::Cancelled:
@@ -271,15 +281,21 @@ void qSlicerCLIProgressBar::updateUiFromCommandLineModuleNode(
     case vtkMRMLCommandLineModuleNode::Running:
       d->ProgressBar->setMaximum(info->Progress != 0.0 ? 100 : 0);
       d->ProgressBar->setValue(info->Progress * 100.);
-      if (info->ElapsedTime != 0.)
+      if (time != QTime(0,0,0))
         {
-        d->StatusLabel->setText(QString("%1 (%2)").arg(node->GetStatusString()).arg(info->ElapsedTime));
+          //d->StatusLabel->setText(QString("%1 : %2 m %3 s").arg(node->GetStatusString()).arg(m).arg(s)); //display m:s:ms
+          d->StatusLabel->setText(QString("%1 : %2 s").arg(node->GetStatusString()).arg(time.toString())); //display h:m:s
         }
       d->StageProgressBar->setMaximum(info->StageProgress != 0.0 ? 100 : 0);
       d->StageProgressBar->setFormat(info->ProgressMessage);
       d->StageProgressBar->setValue(info->StageProgress * 100.);
       break;
     case vtkMRMLCommandLineModuleNode::Completed:
+      //d->StatusLabel->setText(QString("%1 in %2 m %3 s %4 ms").arg(node->GetStatusString()).arg(m).arg(s).arg(z)); //display m:s:ms
+      d->StatusLabel->setText(QString("%1 in %2 s").arg(node->GetStatusString()).arg(time.toString())); //display h:m:s
+      d->ProgressBar->setMaximum(100);
+      d->ProgressBar->setValue(100);
+      break;
     case vtkMRMLCommandLineModuleNode::CompletedWithErrors:
       d->ProgressBar->setMaximum(100);
       d->ProgressBar->setValue(100);
