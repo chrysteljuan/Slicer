@@ -4,6 +4,7 @@
 #include "itkOtsuThresholdImageFilter.h"
 #include "itkShrinkImageFilter.h"
 
+
 #if ITK_VERSION_MAJOR >= 4
 // This is  now officially part of ITKv4
 #include "itkN4BiasFieldCorrectionImageFilter.h"
@@ -56,30 +57,14 @@ public:
 };
 
 template <class T>
-int SaveIt(ImageType::Pointer img, const char* fname, T)
+int SaveIt(int argc, char * argv[], T )
 {
+  PARSE_ARGS;
   typedef itk::Image<T, 3>                                 OutputImageType;
   typedef itk::CastImageFilter<ImageType, OutputImageType> CastType;
 
   typename CastType::Pointer caster = CastType::New();
-  caster->SetInput(img);
-
-  typedef  itk::ImageFileWriter<OutputImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  writer->SetInput( caster->GetOutput() );
-  writer->SetFileName( fname );
-  writer->SetUseCompression(1);
-  writer->Update();
-
-  return EXIT_SUCCESS;
-}
-
-};
-
-int main(int argc, char* * argv)
-{
-
-  PARSE_ARGS;
+//  caster->SetInput(cropper->Getoutput());
 
   ImageType::Pointer inputImage = NULL;
 
@@ -91,14 +76,17 @@ int main(int argc, char* * argv)
 #else
   typedef itk::N4MRIBiasFieldCorrectionImageFilter<ImageType, MaskImageType, ImageType> CorrecterType;
 #endif
-  CorrecterType::Pointer correcter = CorrecterType::New();
+  typename CorrecterType::Pointer correcter = CorrecterType::New();
 
+  //read the input image
   typedef itk::ImageFileReader<ImageType> ReaderType;
-  ReaderType::Pointer reader = ReaderType::New();
-
+  typename ReaderType::Pointer reader = ReaderType::New();
+  itk::PluginFilterWatcher watchReaderN4(reader, "Read Input Volume",
+                                       CLPProcessInformation);
   reader->SetFileName( inputImageName.c_str() );
   reader->Update();
   inputImage = reader->GetOutput();
+  const char *fname = outputImageName.c_str();
 
   /**
    * handle he mask image
@@ -107,7 +95,9 @@ int main(int argc, char* * argv)
   if( maskImageName != "" )
     {
     typedef itk::ImageFileReader<MaskImageType> ReaderType;
-    ReaderType::Pointer maskreader = ReaderType::New();
+    typename ReaderType::Pointer maskreader = ReaderType::New();
+    itk::PluginFilterWatcher watchMaskReader(maskreader, "Read Mask",
+                                       CLPProcessInformation);
     maskreader->SetFileName( maskImageName.c_str() );
     maskreader->Update();
     maskImage = maskreader->GetOutput();
@@ -129,6 +119,7 @@ int main(int argc, char* * argv)
     correcter->SetMaskLabel(maskLabel);
     }
 
+  std::cout << "1 - SaveIt" << std::endl;
   if( !maskImage )
     {
     std::cout << "Mask no read.  Creaing Otsu mask." << std::endl;
@@ -149,7 +140,9 @@ int main(int argc, char* * argv)
   if( weightImageName != "" )
     {
     typedef itk::ImageFileReader<ImageType> ReaderType;
-    ReaderType::Pointer weightreader = ReaderType::New();
+    typename ReaderType::Pointer weightreader = ReaderType::New();
+    itk::PluginFilterWatcher watchWeightReader(weightreader, "Read Weight",
+                                       CLPProcessInformation);
     weightreader->SetFileName( weightImageName.c_str() );
     weightreader->Update();
     weightImage = weightreader->GetOutput();
@@ -219,7 +212,9 @@ int main(int argc, char* * argv)
       }
 
     typedef itk::ConstantPadImageFilter<ImageType, ImageType> PadderType;
-    PadderType::Pointer padder = PadderType::New();
+    typename PadderType::Pointer padder = PadderType::New();
+    itk::PluginFilterWatcher watchPadder(padder, "Padder",
+                                       CLPProcessInformation);
     padder->SetInput( inputImage );
     padder->SetPadLowerBound( lowerBound );
     padder->SetPadUpperBound( upperBound );
@@ -228,7 +223,9 @@ int main(int argc, char* * argv)
     inputImage = padder->GetOutput();
 
     typedef itk::ConstantPadImageFilter<MaskImageType, MaskImageType> MaskPadderType;
-    MaskPadderType::Pointer maskPadder = MaskPadderType::New();
+    typename MaskPadderType::Pointer maskPadder = MaskPadderType::New();
+    itk::PluginFilterWatcher watchMaskPadder(maskPadder, "Mask Padder",
+                                       CLPProcessInformation);
     maskPadder->SetInput( maskImage );
     maskPadder->SetPadLowerBound( lowerBound );
     maskPadder->SetPadUpperBound( upperBound );
@@ -238,7 +235,9 @@ int main(int argc, char* * argv)
 
     if( weightImage )
       {
-      PadderType::Pointer weightPadder = PadderType::New();
+      typename PadderType::Pointer weightPadder = PadderType::New();
+      itk::PluginFilterWatcher watchWeightPadder(weightPadder, "Weight Padder",
+                                       CLPProcessInformation);
       weightPadder->SetInput( weightImage );
       weightPadder->SetPadLowerBound( lowerBound );
       weightPadder->SetPadUpperBound( upperBound );
@@ -259,12 +258,16 @@ int main(int argc, char* * argv)
     }
 
   typedef itk::ShrinkImageFilter<ImageType, ImageType> ShrinkerType;
-  ShrinkerType::Pointer shrinker = ShrinkerType::New();
+  typename ShrinkerType::Pointer shrinker = ShrinkerType::New();
+  itk::PluginFilterWatcher watchShrinker(shrinker, "Shrinker",
+                                       CLPProcessInformation);
   shrinker->SetInput( inputImage );
   shrinker->SetShrinkFactors( 1 );
 
   typedef itk::ShrinkImageFilter<MaskImageType, MaskImageType> MaskShrinkerType;
-  MaskShrinkerType::Pointer maskshrinker = MaskShrinkerType::New();
+  typename MaskShrinkerType::Pointer maskshrinker = MaskShrinkerType::New();
+  itk::PluginFilterWatcher watchMaskShrinker(maskshrinker, "Mask Shrinker",
+                                       CLPProcessInformation);
   maskshrinker->SetInput( maskImage );
   maskshrinker->SetShrinkFactors( 1 );
 
@@ -273,15 +276,19 @@ int main(int argc, char* * argv)
   shrinker->Update();
   maskshrinker->Update();
 
-  itk::TimeProbe timer;
-  timer.Start();
+   itk::PluginFilterWatcher watchN4(correcter, "N4 Bias field correction", CLPProcessInformation);
+ // itk::TimeProbe timer;
+  //timer.Start();
 
   correcter->SetInput( shrinker->GetOutput() );
   correcter->SetMaskImage( maskshrinker->GetOutput() );
+  //correcter->Update();
   if( weightImage )
     {
     typedef itk::ShrinkImageFilter<ImageType, ImageType> WeightShrinkerType;
-    WeightShrinkerType::Pointer weightshrinker = WeightShrinkerType::New();
+    typename WeightShrinkerType::Pointer weightshrinker = WeightShrinkerType::New();
+    itk::PluginFilterWatcher watchWeightShrinker(weightshrinker, "Weight Shrinker",
+                                       CLPProcessInformation);
     weightshrinker->SetInput( weightImage );
     weightshrinker->SetShrinkFactors( 1 );
     weightshrinker->SetShrinkFactors( shrinkFactor );
@@ -309,7 +316,7 @@ int main(int argc, char* * argv)
     correcter->SetNumberOfHistogramBins( nHistogramBins );
     }
 
-  try
+ /* try
     {
     itk::PluginFilterWatcher watchN4(correcter, "N4 Bias field correction", CLPProcessInformation, 1.0 / 1.0, 0.0);
     correcter->Update();
@@ -323,12 +330,13 @@ int main(int argc, char* * argv)
     {
     std::cerr << "Unknown Exception caught." << std::endl;
     return EXIT_FAILURE;
-    }
+    }*/
 
-  correcter->Print( std::cout, 3 );
+  //correcter->Print( std::cout, 3 );
 
-  timer.Stop();
-  std::cout << "Elapsed ime: " << timer.GetMean() << std::endl;
+   correcter->Update();
+  //timer.Stop();
+  //std::cout << "Elapsed ime: " << timer.GetMean() << std::endl;
 
   /**
    * ouput
@@ -343,16 +351,19 @@ int main(int argc, char* * argv)
     typedef itk::BSplineControlPointImageFilter<
       CorrecterType::BiasFieldControlPointLatticeType,
       CorrecterType::ScalarImageType> BSplinerType;
-    BSplinerType::Pointer bspliner = BSplinerType::New();
+    typename BSplinerType::Pointer bspliner = BSplinerType::New();
+    itk::PluginFilterWatcher watchBSplineTyper(bspliner, "Read Input Volume",
+                                       CLPProcessInformation);
+
     bspliner->SetInput( correcter->GetLogBiasFieldControlPointLattice() );
     bspliner->SetSplineOrder( correcter->GetSplineOrder() );
     bspliner->SetSize( inputImage->GetLargestPossibleRegion().GetSize() );
     bspliner->SetOrigin( newOrigin );
     bspliner->SetDirection( inputImage->GetDirection() );
-    bspliner->SetSpacing( inputImage->GetSpacing() );
+    //bspliner->SetSpacing( inputImage->GetSpacing() );
     bspliner->Update();
 
-    ImageType::Pointer logField = ImageType::New();
+    typename ImageType::Pointer logField = ImageType::New();
     logField->SetOrigin( inputImage->GetOrigin() );
     logField->SetSpacing( inputImage->GetSpacing() );
     logField->SetRegions( inputImage->GetLargestPossibleRegion() );
@@ -370,12 +381,16 @@ int main(int argc, char* * argv)
       }
 
     typedef itk::ExpImageFilter<ImageType, ImageType> ExpFilterType;
-    ExpFilterType::Pointer expFilter = ExpFilterType::New();
+    typename ExpFilterType::Pointer expFilter = ExpFilterType::New();
+    itk::PluginFilterWatcher watchExpFilter(expFilter, "ExpFilter",
+                                       CLPProcessInformation);
     expFilter->SetInput( logField );
     expFilter->Update();
 
     typedef itk::DivideImageFilter<ImageType, ImageType, ImageType> DividerType;
-    DividerType::Pointer divider = DividerType::New();
+    typename DividerType::Pointer divider = DividerType::New();
+    itk::PluginFilterWatcher watchDivider(divider, "Divider",
+                                       CLPProcessInformation);
     divider->SetInput1( inputImage );
     divider->SetInput2( expFilter->GetOutput() );
     divider->Update();
@@ -388,6 +403,8 @@ int main(int argc, char* * argv)
     CropperType::Pointer cropper = CropperType::New();
     cropper->SetInput( divider->GetOutput() );
     cropper->SetExtractionRegion( inputRegion );
+
+
 #if ITK_VERSION_MAJOR >= 4
     cropper->SetDirectionCollapseToSubmatrix();
 #endif
@@ -405,56 +422,74 @@ int main(int argc, char* * argv)
     if( outputBiasFieldName != "" )
       {
       typedef itk::ImageFileWriter<ImageType> WriterType;
-      WriterType::Pointer writer = WriterType::New();
+      typename WriterType::Pointer writer = WriterType::New();
+      itk::PluginFilterWatcher watchWriter(writer, "Write Output Volume",
+                                       CLPProcessInformation);
       writer->SetFileName( outputBiasFieldName.c_str() );
       writer->SetInput( biasFieldCropper->GetOutput() );
       writer->SetUseCompression(1);
       writer->Update();
       }
+  typedef  itk::ImageFileWriter<OutputImageType> WriterType;
+  typename WriterType::Pointer writer = WriterType::New();
 
+  itk::PluginFilterWatcher watchwriter(writer, "N4 Bias field correction", CLPProcessInformation);
+  caster->SetInput( cropper->GetOutput() );
+  //correcter->Update();
+  writer->SetInput( caster->GetOutput() );
+  writer->SetFileName( fname );
+  writer->SetUseCompression(1);
+  writer->Update();
+
+  return EXIT_SUCCESS;
+  }
+  return EXIT_SUCCESS;
+}
+}
+
+int main(int argc, char * argv[])
+{
+
+  PARSE_ARGS;
+    itk::ImageIOBase::IOPixelType     pixelType;
+    itk::ImageIOBase::IOComponentType componentType;
     try
       {
-
-      itk::ImageIOBase::IOPixelType     pixelType;
-      itk::ImageIOBase::IOComponentType componentType;
-
       itk::GetImageType(inputImageName, pixelType, componentType);
 
       // This filter handles all types on input, but only produces
       // signed types
-      const char *fname = outputImageName.c_str();
-
       switch( componentType )
         {
         case itk::ImageIOBase::UCHAR:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<unsigned char>(0) );
+          return SaveIt( argc, argv,static_cast<unsigned char>(0) );
           break;
         case itk::ImageIOBase::CHAR:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<char>(0) );
+          return SaveIt(argc, argv, static_cast<char>(0) );
           break;
         case itk::ImageIOBase::USHORT:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<unsigned short>(0) );
+          return SaveIt( argc, argv, static_cast<unsigned short>(0) );
           break;
         case itk::ImageIOBase::SHORT:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<short>(0) );
+          return SaveIt( argc, argv, static_cast<short>(0) );
           break;
         case itk::ImageIOBase::UINT:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<unsigned int>(0) );
+          return SaveIt( argc, argv, static_cast<unsigned int>(0) );
           break;
         case itk::ImageIOBase::INT:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<int>(0) );
+          return SaveIt( argc, argv,static_cast<int>(0) );
           break;
         case itk::ImageIOBase::ULONG:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<unsigned long>(0) );
+          return SaveIt( argc, argv, static_cast<unsigned long>(0) );
           break;
         case itk::ImageIOBase::LONG:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<long>(0) );
+          return SaveIt(argc, argv, static_cast<long>(0) );
           break;
         case itk::ImageIOBase::FLOAT:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<float>(0) );
+          return SaveIt( argc, argv, static_cast<float>(0) );
           break;
         case itk::ImageIOBase::DOUBLE:
-          return SaveIt( cropper->GetOutput(), fname, static_cast<double>(0) );
+          return SaveIt( argc, argv, static_cast<double>(0) );
           break;
         case itk::ImageIOBase::UNKNOWNCOMPONENTTYPE:
           std::cerr << "Cannot saved the result using the requested pixel type" << std::endl;
@@ -463,14 +498,17 @@ int main(int argc, char* * argv)
           std::cout << "unknown component type" << std::endl;
           break;
         }
-      }
+    }
     catch( itk::ExceptionObject & e )
       {
       std::cerr << "Failed to save the data: " << e << std::endl;
       return EXIT_FAILURE;
       }
+    catch( ... )
+      {
+      std::cerr << "Unknown Exception caught." << std::endl;
+      return EXIT_FAILURE;
+      }
+    return EXIT_SUCCESS;
 
-    }
-
-  return EXIT_SUCCESS;
 }
