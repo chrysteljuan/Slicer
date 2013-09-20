@@ -159,6 +159,7 @@ qSlicerSaveDataDialogPrivate::qSlicerSaveDataDialogPrivate(QWidget* parentWidget
   // Finally assign the new header to the view
   this->FileWidget->setHorizontalHeader(headerView);
 
+  this->DirectoryButton->setReadOnlyExcluded(true);
   // Connect push buttons to associated actions
   connect(this->DirectoryButton, SIGNAL(directorySelected(QString)),
           this, SLOT(setDirectory(QString)));
@@ -202,13 +203,15 @@ void qSlicerSaveDataDialogPrivate::setDirectory(const QString& newDirectory)
     {
     QTableWidgetItem* selectItem = this->FileWidget->item(row, SelectColumn);
     Q_ASSERT(selectItem);
+    ctkDirectoryButton* directoryItemButton = qobject_cast<ctkDirectoryButton*>(
+      this->FileWidget->cellWidget(row, FileDirectoryColumn));
+    Q_ASSERT(directoryItemButton);
+    directoryItemButton->setReadOnlyExcluded(true);
+    directoryItemButton->setOptions(ctkDirectoryButton::DontUseNativeDialog);
     if (selectItem->checkState() == Qt::Unchecked)
       {
       continue;
       }
-    ctkDirectoryButton* directoryItemButton = qobject_cast<ctkDirectoryButton*>(
-      this->FileWidget->cellWidget(row, FileDirectoryColumn));
-    Q_ASSERT(directoryItemButton);
     directoryItemButton->setDirectory(newDir.path());
     }
 }
@@ -345,6 +348,8 @@ void qSlicerSaveDataDialogPrivate::populateScene()
   ctkDirectoryButton* sceneDirectoryButton =
     new ctkDirectoryButton(this->MRMLScene->GetRootDirectory(), this->FileWidget);
   this->FileWidget->setCellWidget(row, FileDirectoryColumn, sceneDirectoryButton);
+  sceneDirectoryButton->setReadOnlyExcluded(true);
+  sceneDirectoryButton->setOptions(ctkDirectoryButton::DontUseNativeDialog);
 
   // Scene Selected
   QTableWidgetItem* selectItem = this->FileWidget->item(row, SelectColumn);
@@ -644,7 +649,10 @@ QTableWidgetItem* qSlicerSaveDataDialogPrivate
 QWidget* qSlicerSaveDataDialogPrivate::createFileDirectoryWidget(const QFileInfo& fileInfo)
 {
   // TODO: use QSignalMapper
-  return new ctkDirectoryButton(fileInfo.absolutePath(),this->FileWidget);
+  ctkDirectoryButton* directoryWidget  = new ctkDirectoryButton(fileInfo.absolutePath(),this->FileWidget);
+  directoryWidget->setReadOnlyExcluded(true);
+  directoryWidget->setOptions(ctkDirectoryButton::DontUseNativeDialog);
+  return directoryWidget;
 }
 
 //-----------------------------------------------------------------------------
@@ -807,6 +815,8 @@ QFileInfo qSlicerSaveDataDialogPrivate::file(int row)const
 
   ctkDirectoryButton* fileDirectoryButton = qobject_cast<ctkDirectoryButton*>(
     this->FileWidget->cellWidget(row, FileDirectoryColumn));
+  fileDirectoryButton->setReadOnlyExcluded(true);
+  fileDirectoryButton->setOptions(ctkDirectoryButton::DontUseNativeDialog);
   Q_ASSERT(fileDirectoryButton);
 
   QDir directory = fileDirectoryButton->directory();
@@ -927,6 +937,8 @@ QFileInfo qSlicerSaveDataDialogPrivate::sceneFile()const
   ctkDirectoryButton* fileDirectoryButton = qobject_cast<ctkDirectoryButton*>(
     this->FileWidget->cellWidget(sceneRow, FileDirectoryColumn));
 
+  fileDirectoryButton->setOptions(ctkDirectoryButton::DontUseNativeDialog);
+  fileDirectoryButton->setReadOnlyExcluded(true);
   QDir directory = fileDirectoryButton->directory();
   QFileInfo file = QFileInfo(directory, fileNameItem->text());
   if (file.fileName().isEmpty())
